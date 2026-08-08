@@ -1,40 +1,48 @@
-import { createWriteStream, DelimiterFormatter, FileWriter } from 'io-one';
-import { Pool } from 'pg';
-import { Exporter, select, Statement } from 'pg-exporter';
-import { User, userModel } from './user';
+import { merge } from "config-plus";
+import { createWriteStream, DelimiterFormatter, FileWriter, getPrefix, LogWriter, timeToString } from "io-one";
+import { createLogger } from "logger-core";
+import path from "path";
+import { Pool } from "pg";
+import { config, environments } from "./config";
+import { Exporter, select, Statement } from "./pg-exporter";
+import { User, userModel } from "./user";
 
-// Create a connection to the database
-const pool = new Pool({
-  host: 'ec2-34-199-68-114.compute-1.amazonaws.com',
-  user: 'renhnmkhkoqvjr',
-  database: 'd1mrc2lb73u081',
-  password: '05b33690540167d997be040566dfcbc61a85bcdfad400e69cd76ed81aef7eeeb',
-  port: 5432,
-  ssl: { rejectUnauthorized: false },
-});
+const cfg = merge(config, process.env, environments, process.env.ENV)
 
 export class QueryBuilder {
   constructor() {
     this.buildQuery = this.buildQuery.bind(this);
   }
   buildQuery(cxt?: any): Promise<Statement> {
-    const stmt: Statement = {query: select('users3', userModel)};
+    const stmt: Statement = { query: select("export_users", userModel) };
     return Promise.resolve(stmt);
   }
 }
 
-async function exportCSV() {
-  const dir = './dest_dir/';
-  const writeStream = createWriteStream(dir, 'export.csv');
+async function exportData() {
+  const pool = new Pool(cfg.db)
+
+  const now = new Date()
+  const errorWriter = new LogWriter(getPrefix(cfg.error.prefix, now) + "_" + timeToString(now) + cfg.error.suffix, cfg.error.directory)
+  const logWriter = new LogWriter(getPrefix(cfg.info.prefix, now) + "_" + timeToString(now) + cfg.info.suffix, cfg.info.directory)
+
+  const logger = createLogger(cfg.log, undefined, undefined, errorWriter.write, logWriter.write)
+
+  const dir = "./dest_dir/";
+  const filename = "export.csv"
+  const writeStream = createWriteStream(dir, "export.csv");
   const writer = new FileWriter(writeStream);
-  // (D) EXPORT TO CSV
-  const transform = new DelimiterFormatter<User>(',', userModel);
+
+  const formatter = new DelimiterFormatter<User>(",", userModel);
   const queryBuilder = new QueryBuilder();
-  // (D1) ON ERROR
+
+  logger.info(`Export "${path.join(dir, filename)}" file`)
   // const exporter = new ExportService<User>(pool, queryBuilder, transform, writer);
-  const exporter = new Exporter<User>(pool, queryBuilder.buildQuery, transform.format, writer.write, writer.end, userModel);
+  const exporter = new Exporter<User>(pool, queryBuilder.buildQuery, formatter.format, writer.write, writer.end, userModel);
   const total = await exporter.export();
+
+  logger.info(`Export "${path.join(dir, filename)}" file. Total: ${total}`)
   console.log(total);
 }
 
-exportCSV();
+exportData();

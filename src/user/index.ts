@@ -1,4 +1,4 @@
-import { Attributes } from 'onecore';
+import { Attributes } from "onecore";
 
 export interface User {
   id: string;
@@ -8,7 +8,7 @@ export interface User {
   status?: boolean;
   createdDate?: string;
 }
-export function toString2(v: any): string {
+export function toString(v: any): string {
   return v.toISOString();
 }
 export const userModel: Attributes = {
@@ -28,12 +28,12 @@ export const userModel: Attributes = {
   },
   status: {
     length: 5,
-    type: 'boolean',
+    type: "boolean",
   },
   createdDate: {
     length: 10,
-    type: 'date',
-    column: 'createddate',
-    getString: toString2
+    type: "date",
+    column: "createddate",
+    getString: toString
   },
 };
