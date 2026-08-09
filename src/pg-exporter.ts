@@ -1,6 +1,9 @@
 import { Pool } from "pg";
 import QueryStream from "pg-query-stream";
 
+export interface SimpleMap {
+  [key: string]: string | number | boolean | Date
+}
 export type DataType =
   | "ObjectId"
   | "date"
@@ -52,11 +55,14 @@ export interface FileWriter {
 export class Exporter<T> {
   constructor(
     protected pool: Pool,
+    protected filename: string,
     protected buildQuery: (ctx?: any) => Promise<Statement>,
     protected format: (row: T) => string,
     protected write: (chunk: string) => boolean,
     protected end: (cb?: () => void) => void,
-    protected attributes?: Attributes
+    protected attributes?: Attributes,
+    protected logInfo?: (msg: string, m?: SimpleMap) => void,
+    protected progressSize: number = 10000,
   ) {
     if (attributes) {
       this.map = buildMap(attributes);
@@ -65,23 +71,38 @@ export class Exporter<T> {
   }
   map?: StringMap;
   async export(ctx?: any): Promise<number> {
-    let i = 0;
     const stmt = await this.buildQuery(ctx);
     const query = new QueryStream(stmt.query, stmt.params);
     await this.pool.connect();
     this.pool.query(query);
+    let i = 0;
+    let k = 0;
     if (this.map) {
       for await (const data of query) {
         i++;
+        k++;
         const obj = mapOne<T>(data, this.map);
         const str = this.format(obj);
         this.write(str);
+        if (k >= this.progressSize) {
+          if (this.logInfo) {
+            this.logInfo(`Progress: ${i} records processed of file '${this.filename}'`);
+          }
+          k = 0;
+        }
       }
     } else {
       for await (const data of query) {
         i++;
+        k++;
         const str = this.format(data);
         this.write(str);
+        if (k >= this.progressSize) {
+          if (this.logInfo) {
+            this.logInfo(`Progress: ${i} records processed of file '${this.filename}'`);
+          }
+          k = 0;
+        }
       }
     }
     this.pool.end();
@@ -93,10 +114,13 @@ export class Exporter<T> {
 export class ExportService<T> {
   constructor(
     protected pool: Pool,
+    protected filename: string,
     protected queryBuilder: QueryBuilder,
     protected formatter: Formatter<T>,
     protected writer: FileWriter,
-    protected attributes?: Attributes
+    protected attributes?: Attributes,
+    protected logInfo?: (msg: string, m?: SimpleMap) => void,
+    protected progressSize: number = 10000,
   ) {
     if (attributes) {
       this.map = buildMap(attributes);
@@ -105,23 +129,39 @@ export class ExportService<T> {
   }
   map?: StringMap;
   async export(ctx?: any): Promise<number> {
-    let i = 0;
+    
     const stmt = await this.queryBuilder.buildQuery(ctx);
     const query = new QueryStream(stmt.query, stmt.params);
     await this.pool.connect();
     this.pool.query(query);
+    let i = 0;
+    let k = 0;
     if (this.map) {
       for await (const data of query) {
         i++;
+        k++;
         const obj = mapOne<T>(data, this.map);
         const str = this.formatter.format(obj);
         this.writer.write(str);
+        if (k >= this.progressSize) {
+          if (this.logInfo) {
+            this.logInfo(`Progress: ${i} records processed of file '${this.filename}'`);
+          }
+          k = 0;
+        }
       }
     } else {
       for await (const data of query) {
         i++;
+        k++;
         const str = this.formatter.format(data);
         this.writer.write(str);
+        if (k >= this.progressSize) {
+          if (this.logInfo) {
+            this.logInfo(`Progress: ${i} records processed of file '${this.filename}'`);
+          }
+          k = 0;
+        }
       }
     }
     this.pool.end();

@@ -11,6 +11,7 @@ export const config = {
   file: {
     path: "./out_dir/",
     prefix: "user_",
+    header: "id,username,email,phone,status,createddate\n",
   },
   db: {
     connectionString: "postgres://postgres:abcd1234@localhost/masterdata",

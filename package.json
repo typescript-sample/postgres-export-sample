@@ -4,8 +4,11 @@
   "description": "A basic typescript app starter for newbies in 2022.",
   "main": "index.js",
   "scripts": {
+    "start": "nodemon --exec ts-node-dev src/app",
     "build": "webpack --config webpack.config.js",
-    "start": "nodemon --exec ts-node-dev src/app"
+    "dev": "nodemon --exec ts-node-dev src/app",
+    "prod": "node dist/app",
+    "compile": "rimraf ./build && tsc"
   },
   "husky": {
     "hooks": {
@@ -21,7 +24,6 @@
     "logger-core": "^0.5.2",
     "onecore": "^0.6.2",
     "pg": "^8.23.0",
-    "pg-promise": "^12.7.0",
     "pg-query-stream": "^4.17.0"
   },
   "devDependencies": {

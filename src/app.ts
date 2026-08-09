@@ -4,7 +4,7 @@ import { createFileLogger } from "logger-core";
 import path from "path";
 import { Pool } from "pg";
 import { config, environments } from "./config";
-import { Exporter, select, Statement } from "./pg-exporter";
+import { ExportService, select, Statement } from "./pg-exporter";
 import { User, userModel } from "./user";
 
 const cfg = merge(config, process.env, environments, process.env.ENV)
@@ -15,6 +15,7 @@ export class QueryBuilder {
   }
   buildQuery(cxt?: any): Promise<Statement> {
     const stmt: Statement = { query: select("export_users", userModel) };
+    console.log(stmt.query)
     return Promise.resolve(stmt);
   }
 }
@@ -32,12 +33,13 @@ async function exportData() {
   const writer = new FileWriter(writeStream);
   const pool = new Pool(cfg.db)
 
-  const formatter = new CSVFormatter<User>(",", userModel);
+  const formatter = new CSVFormatter<User>(userModel, ",");
   const queryBuilder = new QueryBuilder();
 
-  logger.info(`Export "${path.join(dir, filename)}" file`)
-  // const exporter = new ExportService<User>(pool, queryBuilder, transform, writer);
-  const exporter = new Exporter<User>(pool, queryBuilder.buildQuery, formatter.format, writer.write, writer.end, userModel);
+  logger.info(`Start to export "${path.join(dir, filename)}" file`)
+  writer.write(cfg.file.header)
+  const exporter = new ExportService<User>(pool, filename, queryBuilder, formatter, writer, userModel, logger.info, 3);
+  // const exporter = new Exporter<User>(pool, filename, queryBuilder.buildQuery, formatter.format, writer.write, writer.end, userModel, logger.info, 3);
   const total = await exporter.export();
 
   logger.info(`Export "${path.join(dir, filename)}" file. Total: ${total}`)
