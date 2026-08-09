@@ -9,7 +9,7 @@ export const config = {
     db: true,
   },
   file: {
-    path: "./scan_dir/",
+    path: "./out_dir/",
     prefix: "user_",
   },
   db: {

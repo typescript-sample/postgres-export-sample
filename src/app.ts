@@ -1,6 +1,6 @@
 import { merge } from "config-plus";
-import { createWriteStream, DelimiterFormatter, FileWriter, getPrefix, LogWriter, timeToString } from "io-one";
-import { createLogger } from "logger-core";
+import { createWriteStream, CSVFormatter, FileWriter, getPrefix, LogWriter, timeToString } from "export-kit";
+import { createFileLogger } from "logger-core";
 import path from "path";
 import { Pool } from "pg";
 import { config, environments } from "./config";
@@ -20,20 +20,19 @@ export class QueryBuilder {
 }
 
 async function exportData() {
-  const pool = new Pool(cfg.db)
-
   const now = new Date()
   const errorWriter = new LogWriter(getPrefix(cfg.error.prefix, now) + "_" + timeToString(now) + cfg.error.suffix, cfg.error.directory)
   const logWriter = new LogWriter(getPrefix(cfg.info.prefix, now) + "_" + timeToString(now) + cfg.info.suffix, cfg.info.directory)
 
-  const logger = createLogger(cfg.log, undefined, undefined, errorWriter.write, logWriter.write)
+  const logger = createFileLogger(cfg.log, errorWriter.write, logWriter.write)
 
-  const dir = "./dest_dir/";
-  const filename = "export.csv"
-  const writeStream = createWriteStream(dir, "export.csv");
+  const dir = cfg.file.path
+  const filename = getPrefix(cfg.file.prefix, now) + "_" + timeToString(now) + ".csv"
+  const writeStream = createWriteStream(dir, filename);
   const writer = new FileWriter(writeStream);
+  const pool = new Pool(cfg.db)
 
-  const formatter = new DelimiterFormatter<User>(",", userModel);
+  const formatter = new CSVFormatter<User>(",", userModel);
   const queryBuilder = new QueryBuilder();
 
   logger.info(`Export "${path.join(dir, filename)}" file`)
@@ -42,7 +41,8 @@ async function exportData() {
   const total = await exporter.export();
 
   logger.info(`Export "${path.join(dir, filename)}" file. Total: ${total}`)
-  console.log(total);
+  errorWriter.flush()
+  logWriter.flush()
 }
 
 exportData();

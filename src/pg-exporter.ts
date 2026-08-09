@@ -1,5 +1,5 @@
-import { Pool } from 'pg';
-import QueryStream from 'pg-query-stream';
+import { Pool } from "pg";
+import QueryStream from "pg-query-stream";
 
 export type DataType =
   | "ObjectId"
@@ -174,7 +174,7 @@ export function buildMap(attrs: Attributes): StringMap|undefined {
   return undefined;
 }
 export function param(i: number): string {
-  return '$' + i;
+  return "$" + i;
 }
 export function select(table: string, attrs: Attributes): string {
   const cols: string[] = [];
@@ -186,5 +186,5 @@ export function select(table: string, attrs: Attributes): string {
     const s = field.toLowerCase();
     cols.push(s);
   }
-  return `select ${cols.join(',')} from ${table}`;
+  return `select ${cols.join(",")} from ${table}`;
 }
