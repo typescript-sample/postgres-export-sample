@@ -6,17 +6,26 @@
 
 The sample intentionally contains very little application logic. Most of the work is delegated to reusable infrastructure libraries.
 
+Instead of using a large framework, each library has a single responsibility and can be reused independently.
+
+- [`config-plus`](https://www.npmjs.com/package/config-plus) — Configuration management
+- [`logger-core`](https://www.npmjs.com/package/logger-core) — Logging
+- [`pg-exporter`](https://www.npmjs.com/package/pg-exporter) — Streams data directly from PostgreSQL to CSV
+- [`export-kit`](https://www.npmjs.com/package/export-kit) — File formatting and writing
+
+The application itself contains almost no infrastructure code because those responsibilities are delegated to reusable libraries.
+
 ---
 
 # Features
 
+* Environment-based configuration
 * PostgreSQL streaming export
-* CSV file generation
 * Schema-driven formatting
 * Automatic field mapping
+* CSV file generation
 * Progress logging
 * File logging
-* Environment-based configuration
 * Constant memory usage
 * Modular architecture
 
@@ -50,21 +59,30 @@ Each library has a single responsibility.
 # Export Pipeline
 
 ```text
- PostgreSQL
-      │
-      ▼
- QueryBuilder
-      │
-      ▼
- pg-exporter
-      │
-      ▼
- CSVFormatter
-      │
-      ▼
- FileWriter
-      │
-      ▼
+   PostgreSQL
+        │
+        ▼
+  QueryBuilder
+        │
+        ▼        
+ Streaming Export
+  (pg-exporter)
+        │
+        ▼
+Application Objects
+        │
+        ▼
+   CSVFormatter
+   (export-kit)
+        │
+        ▼
+   CSV Records
+        │
+        ▼
+    FileWriter
+   (export-kit)
+        │
+        ▼
 user_YYYYMMDD_HHMMSS.csv
 ```
 
@@ -96,10 +114,27 @@ That demonstrates the intended layering very well.
 
 Loads configuration and environment-specific settings.
 
+```ts
+const cfg = merge(config, process.env, environments, process.env.ENV)
+```
+
 Responsible for:
 
 * configuration
 * environment overrides
+
+```text
+          Default Configuration
+                   │
+                   ▼
+Environment Configuration (SIT, UAT, PRD)
+                   │
+                   ▼
+   Environment Variables (process.env)
+                   │
+                   ▼
+          Final Configuration
+```
 
 ---
 
@@ -126,11 +161,27 @@ Used components include:
 * `LogWriter`
 * `createWriteStream`
 
+### Workflow Utilities
+
+This sample also demonstrates why [**export-kit**](https://www.npmjs.com/package/export-kit) contains a small set of workflow utilities.
+
+```ts
+const filename = getPrefix("user_", now) + "_" + timeToString(now) + ".csv"
+```
+
+Instead of creating project-specific helper functions, these common batch-processing utilities are shared across applications.
+
 ---
 
 ## pg-exporter
 
 Responsible for exporting data from PostgreSQL.
+
+```ts
+const exporter = new ExportService<User>(pool, filename, queryBuilder, formatter, writer, userModel, logger.info, 100);
+
+const total = await exporter.export();
+```
 
 Features demonstrated:
 
@@ -155,7 +206,7 @@ QueryBuilder
 SQL Statement
       │
       ▼
-Exporter
+  Exporter
 ```
 
 This separation makes SQL generation reusable and easy to test.
@@ -208,7 +259,47 @@ The sample demonstrates two kinds of logging:
 * Application logs
 * Error logs
 
+Log files are automatically timestamped using the workflow utilities provided by [**export-kit**](https://www.npmjs.com/package/export-kit).
+
+```ts
+import { getPrefix, LogWriter, timeToString } from "export-kit"
+import { createFileLogger } from "logger-core"
+
+const now = new Date()
+
+const errorWriter = new LogWriter(getPrefix("error_", now) + "_" + timeToString(now) + ".txt", "./log/")
+const logWriter = new LogWriter(getPrefix("log_", now) + "_" + timeToString(now) + ".txt", "./log/")
+
+const logger = createFileLogger(cfg.log, errorWriter.write, logWriter.write)
+```
+
+Example:
+
+```text
+log_20260809_214552.txt
+error_20260809_214552.txt
+```
+
 In addition, `pg-exporter` reports export progress at configurable intervals, making long-running batch jobs easier to monitor.
+
+---
+
+# Running the Sample
+
+```bash
+npm install
+npm start
+```
+
+After execution:
+
+```text
+out_dir/
+  ├── user_20260809_214552.csv
+log/
+  ├── log_20260809_214552.txt
+  └── error_20260809_214552.txt
+```
 
 ---
 
@@ -232,12 +323,12 @@ src
 
 This sample follows a few simple principles:
 
-* Composition over monolithic frameworks
 * Single responsibility
 * Metadata-driven configuration
 * Streaming instead of buffering
 * Reusable infrastructure libraries
 * Thin application layer
+* Composition over monolithic frameworks
 
 ---
 
