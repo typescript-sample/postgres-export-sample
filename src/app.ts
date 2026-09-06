@@ -11,9 +11,9 @@ const cfg = merge(config, process.env, environments, process.env.ENV)
 
 export class QueryBuilder {
   constructor() {
-    this.buildQuery = this.buildQuery.bind(this)
+    this.build = this.build.bind(this)
   }
-  buildQuery(cxt?: any): Promise<Statement> {
+  build(cxt?: any): Promise<Statement> {
     const stmt: Statement = { query: select("export_users", userSchema) }
     return Promise.resolve(stmt)
   }
