@@ -20,9 +20,9 @@
   "license": "ISC",
   "dependencies": {
     "config-plus": "^0.1.1",
-    "export-kit": "^0.2.2",
+    "export-kit": "^0.2.5",
     "logger-core": "^0.5.2",
-    "onecore": "^0.6.6",
+    "onecore": "^0.6.7",
     "pg": "^8.23.0",
     "pg-exporter": "^0.3.5",
     "pg-query-stream": "^4.17.0"
@@ -33,8 +33,8 @@
     "ts-loader": "^9.6.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.3",
-    "webpack": "^5.110.3",
-    "webpack-bundle-analyzer": "^5.3.2",
+    "webpack": "^5.111.1",
+    "webpack-bundle-analyzer": "^5.4.0",
     "webpack-cli": "^7.2.3",
     "webpack-dev-server": "^6.0.0"
   }

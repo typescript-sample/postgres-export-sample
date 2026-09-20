@@ -1,5 +1,5 @@
 import { merge } from "config-plus"
-import { createWriteStream, CSVFormatter, FileWriter, getPrefix, LogWriter, timeToString, toString } from "export-kit"
+import { createLogWriter, createWriteStream, CSVFormatter, FileWriter, getPrefix, timeToString, toString } from "export-kit"
 import { createFileLogger } from "logger-core"
 import path from "path"
 import { Pool } from "pg"
@@ -21,8 +21,8 @@ export class QueryBuilder {
 
 async function exportData() {
   const now = new Date()
-  const errorWriter = new LogWriter(`${getPrefix(cfg.error.prefix, now)}_${timeToString(now)}${cfg.error.suffix}`, cfg.error.directory)
-  const logWriter = new LogWriter(`${getPrefix(cfg.info.prefix, now)}_${timeToString(now)}${cfg.info.suffix}`, cfg.info.directory)
+  const errorWriter = createLogWriter(cfg.error.directory, `${getPrefix(cfg.error.prefix, now)}_${timeToString(now)}${cfg.error.suffix}`)
+  const logWriter = createLogWriter(cfg.info.directory, `${getPrefix(cfg.info.prefix, now)}_${timeToString(now)}${cfg.info.suffix}`)
 
   const logger = createFileLogger(cfg.log, errorWriter.write, logWriter.write)
 
