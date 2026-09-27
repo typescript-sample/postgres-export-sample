@@ -20,7 +20,7 @@
   "license": "ISC",
   "dependencies": {
     "config-plus": "^0.1.1",
-    "export-kit": "^0.2.5",
+    "export-kit": "^0.2.6",
     "logger-core": "^0.5.2",
     "onecore": "^0.6.7",
     "pg": "^8.23.0",
