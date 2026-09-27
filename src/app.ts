@@ -1,4 +1,5 @@
 import { merge } from "config-plus"
+import dotenv from "dotenv"
 import { createLogWriter, createWriteStream, CSVFormatter, FileWriter, getPrefix, timeToString, toString } from "export-kit"
 import { createFileLogger } from "logger-core"
 import path from "path"
@@ -6,6 +7,8 @@ import { Pool } from "pg"
 import { ExportService, select, Statement } from "pg-exporter"
 import { config, environments } from "./config"
 import { User, userModel as userSchema } from "./user"
+
+dotenv.config()
 
 const cfg = merge(config, process.env, environments, process.env.ENV)
 
