@@ -14,7 +14,7 @@ export const config = {
     header: "id,username,email,phone,status,createddate\n",
   },
   db: {
-    connectionString: "postgres://postgres:abcd1234@localhost/masterdata",
+    connectionString: "",
   },
   error: {
     directory: "./log/",
